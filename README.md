@@ -31,7 +31,11 @@ Starter kit REST API dengan **Rust**, **Actix Web**, **PostgreSQL** (SeaORM), au
 
 ## Dokumentasi lanjutan
 
-Detail arsitektur kode, alur request, cara menambah fitur, dan preset connection pool database ada di **[guides/README.md](guides/README.md)**.
+| Dokumen | Isi |
+| ------- | --- |
+| [guides/README.md](guides/README.md) | Arsitektur, struktur kode, connection pool |
+| [guides/COMMITS.md](guides/COMMITS.md) | Rekomendasi format commit message Git |
+| [CHANGELOG.md](CHANGELOG.md) | Riwayat perubahan versi |
 
 ## Memulai
 

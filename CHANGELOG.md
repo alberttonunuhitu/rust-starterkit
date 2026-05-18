@@ -32,6 +32,8 @@ Contoh entri:
 
 Perubahan yang belum dirilis tulis di bagian `[Unreleased]`. Saat rilis, pindahkan isinya ke versi baru dan kosongkan `[Unreleased]`.
 
+Format commit message mengikuti [guides/COMMITS.md](guides/COMMITS.md) (Conventional Commits).
+
 ---
 
 ## [Unreleased]

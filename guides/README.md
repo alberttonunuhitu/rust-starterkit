@@ -2,6 +2,11 @@
 
 Dokumen ini menjelaskan arsitektur kode dan konfigurasi connection pool database untuk **rust-starterkit**.
 
+| Panduan | Isi |
+| ------- | --- |
+| **README.md** (file ini) | Arsitektur, struktur kode, connection pool |
+| **[COMMITS.md](COMMITS.md)** | Format commit message (Conventional Commits) |
+
 ---
 
 ## Arsitektur & struktur kode
