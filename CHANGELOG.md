@@ -69,12 +69,13 @@ Rilis awal **rust-starterkit**.
 - Binary `generate-paseto-keys` untuk kunci PASETO
 - Dokumentasi `README.md` dan `guides/README.md`
 
-## [0.2.0] - 2026-05-18
+## [0.2.0] - 2026-05-26
 
 ### Changed
 
 - Logging terstruktur hanya ke stdout (JSON, RFC 3339, span) — menggantikan dual output (JSON file + pretty console)
 - Filter level tetap lewat `RUST_LOG` (default `info`)
+- Nama paket Cargo dari `rust-starterkit` menjadi `api` (import library: `use api::...`)
 - Dokumentasi logging di `README.md` dan `.env.example`
 
 ### Removed

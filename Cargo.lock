@@ -268,6 +268,30 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f202df86484c868dbad7eaa557ef785d5c66295e41b460ef922eca0723b842c"
 
 [[package]]
+name = "api"
+version = "0.2.0"
+dependencies = [
+ "actix-web",
+ "anyhow",
+ "argon2",
+ "chrono",
+ "config",
+ "dotenvy",
+ "duration-str",
+ "futures-util",
+ "hex",
+ "pasetors",
+ "sea-orm",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tracing",
+ "tracing-actix-web",
+ "tracing-subscriber",
+ "uuid",
+]
+
+[[package]]
 name = "argon2"
 version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2605,30 +2629,6 @@ checksum = "796e8d2b6696392a43bea58116b667fb4c29727dc5abd27d6acf338bb4f688c7"
 dependencies = [
  "cfg-if",
  "ordered-multimap",
-]
-
-[[package]]
-name = "rust-starterkit"
-version = "0.2.0"
-dependencies = [
- "actix-web",
- "anyhow",
- "argon2",
- "chrono",
- "config",
- "dotenvy",
- "duration-str",
- "futures-util",
- "hex",
- "pasetors",
- "sea-orm",
- "serde",
- "serde_json",
- "thiserror",
- "tracing",
- "tracing-actix-web",
- "tracing-subscriber",
- "uuid",
 ]
 
 [[package]]

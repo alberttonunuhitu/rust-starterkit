@@ -1,7 +1,7 @@
 use actix_web::{App, HttpServer, web};
-use rust_starterkit::config::AppConfig;
-use rust_starterkit::state::AppState;
-use rust_starterkit::{
+use api::config::AppConfig;
+use api::state::AppState;
+use api::{
     common::middleware::{authenticate::AuthenticateMiddleware, request_id::RequestIdMiddleware},
     infrastructure::database::connection::establish_connection,
 };
@@ -20,7 +20,7 @@ async fn main() -> std::io::Result<()> {
         "Starting server"
     );
 
-    rust_starterkit::utils::paseto::init(&config).map_err(std::io::Error::other)?;
+    api::utils::paseto::init(&config).map_err(std::io::Error::other)?;
 
     let db = establish_connection(&config)
         .await
@@ -43,16 +43,16 @@ async fn main() -> std::io::Result<()> {
 }
 
 fn public_routes(cfg: &mut web::ServiceConfig) {
-    cfg.configure(rust_starterkit::features::health::routes::health_routes)
-        .configure(rust_starterkit::features::auth::routes::auth_routes);
+    cfg.configure(api::features::health::routes::health_routes)
+        .configure(api::features::auth::routes::auth_routes);
 }
 
 fn protected_routes(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("")
             .wrap(AuthenticateMiddleware)
-            .configure(rust_starterkit::features::user::routes::user_routes)
-            .configure(rust_starterkit::features::auth::routes::protected_auth_routes),
+            .configure(api::features::user::routes::user_routes)
+            .configure(api::features::auth::routes::protected_auth_routes),
     );
 }
 
