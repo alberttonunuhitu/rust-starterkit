@@ -1,0 +1,53 @@
+# Rust / Cargo — tidak perlu di context; dibuild ulang di image
+/target/
+**/*.rs.bk
+*.pdb
+
+# Crate migrasi SeaORM (build terpisah)
+src/infrastructure/database/migrations/target/
+
+# Rahasia & env lokal — inject lewat env/secret runtime, bukan image
+.env
+.env.*
+!.env.example
+src/infrastructure/database/migrations/.env
+src/infrastructure/database/migrations/.env.*
+
+# Runtime lokal
+/logs/
+
+# Git & CI (memperkecil build context)
+.git/
+.gitignore
+.github/
+
+# Dokumentasi & panduan (tidak dipakai saat `cargo build`)
+README.md
+CHANGELOG.md
+guides/
+
+# IDE & editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Debug / coverage / profiling
+*.profraw
+coverage/
+*.gcda
+*.gcno
+
+# Backup
+*.bak
+
+# Docker (opsional — hindari recursive context jika Dockerfile di root)
+Dockerfile*
+.dockerignore
+docker-compose*.yml
+compose*.yml

@@ -52,6 +52,30 @@ Format commit message mengikuti [guides/COMMITS.md](guides/COMMITS.md) (Conventi
 
 ---
 
+## [0.2.0] - 2026-05-26
+
+### Added
+
+- Dukungan Docker: `Dockerfile` multi-stage (`cargo-chef`) dengan target `api` dan `migrate`
+- `docker-compose.yml` dengan profile `dev` (PostgreSQL 16, migrasi one-shot, API)
+- `.dockerignore` untuk konteks build yang lebih ringan
+- Variabel `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` di `.env.example` untuk Compose
+- Panduan menjalankan stack Docker di `README.md` (`docker compose --profile dev`)
+
+### Changed
+
+- Logging terstruktur hanya ke stdout (JSON, RFC 3339, span) — menggantikan dual output (JSON file + pretty console)
+- Filter level tetap lewat `RUST_LOG` (default `info`)
+- Nama paket Cargo dari `rust-starterkit` menjadi `api` (import library: `use api::...`)
+- Dokumentasi logging di `README.md` dan `.env.example`
+- `.env.example`: tambah blok konfigurasi database untuk Docker Compose
+
+### Removed
+
+- Penulisan log ke file harian (`logs/rust-starterkit.log.*`) dan rotasi via `tracing-appender`
+- Konfigurasi `APP_LOG__DIR` dan struct `LoggingConfig` pada `AppConfig`
+- Dependency `tracing-appender`
+
 ## [0.1.0] - 2026-05-18
 
 Rilis awal **rust-starterkit**.
@@ -68,21 +92,6 @@ Rilis awal **rust-starterkit**.
 - Konfigurasi environment (`APP_*`) dan `.env.example`
 - Binary `generate-paseto-keys` untuk kunci PASETO
 - Dokumentasi `README.md` dan `guides/README.md`
-
-## [0.2.0] - 2026-05-26
-
-### Changed
-
-- Logging terstruktur hanya ke stdout (JSON, RFC 3339, span) — menggantikan dual output (JSON file + pretty console)
-- Filter level tetap lewat `RUST_LOG` (default `info`)
-- Nama paket Cargo dari `rust-starterkit` menjadi `api` (import library: `use api::...`)
-- Dokumentasi logging di `README.md` dan `.env.example`
-
-### Removed
-
-- Penulisan log ke file harian (`logs/rust-starterkit.log.*`) dan rotasi via `tracing-appender`
-- Konfigurasi `APP_LOG__DIR` dan struct `LoggingConfig` pada `AppConfig`
-- Dependency `tracing-appender`
 
 [Unreleased]: https://github.com/YOUR_USER/rust-starterkit/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/YOUR_USER/rust-starterkit/releases/tag/v0.1.0
