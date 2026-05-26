@@ -33,7 +33,7 @@ impl AuthService {
                 tracing::error!(event = "auth.login.db_error", error = %e);
                 ApiError::InternalServerError
             })?
-            .ok_or_else(|| ApiError::Unauthorized)?;
+            .ok_or(ApiError::Unauthorized)?;
 
         let password_valid = password::verify(&request.password, &user.hashed_password)?;
         if !password_valid {

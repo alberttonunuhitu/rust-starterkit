@@ -110,10 +110,10 @@ impl UserService {
         }
 
         if !changed {
-            return Ok(active.try_into_model().map_err(|e| {
+            return active.try_into_model().map_err(|e| {
                 tracing::error!(event = "user.update.model_convert.failed", error = %e);
                 ApiError::InternalServerError
-            })?);
+            });
         }
 
         active.update(&self.db).await.map_err(|e| {
@@ -145,10 +145,10 @@ impl UserService {
     ) -> Result<String, ApiError> {
         let normalized = email.trim().to_lowercase();
 
-        if let Some(existing) = self.find_by_email(&normalized).await? {
-            if except_id != Some(existing.id) {
-                return Err(ApiError::EmailAlreadyExists);
-            }
+        if let Some(existing) = self.find_by_email(&normalized).await?
+            && except_id != Some(existing.id)
+        {
+            return Err(ApiError::EmailAlreadyExists);
         }
 
         Ok(normalized)

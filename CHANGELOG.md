@@ -61,6 +61,8 @@ Format commit message mengikuti [guides/COMMITS.md](guides/COMMITS.md) (Conventi
 - `.dockerignore` untuk konteks build yang lebih ringan
 - Variabel `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` di `.env.example` untuk Compose
 - Panduan menjalankan stack Docker di `README.md` (`docker compose --profile dev`)
+- GitHub Actions workflow `CI` untuk `push`/`pull_request` ke `main`: `cargo fmt`, `clippy` (`-D warnings`), build release (`api`, migrasi, `generate-paseto-keys`)
+- Cache Cargo (`Swatinem/rust-cache`) untuk workspace utama dan crate migrasi
 
 ### Changed
 
@@ -69,6 +71,9 @@ Format commit message mengikuti [guides/COMMITS.md](guides/COMMITS.md) (Conventi
 - Nama paket Cargo dari `rust-starterkit` menjadi `api` (import library: `use api::...`)
 - Dokumentasi logging di `README.md` dan `.env.example`
 - `.env.example`: tambah blok konfigurasi database untuk Docker Compose
+- Penyesuaian kode agar lulus `cargo fmt` dan `cargo clippy --all-targets -- -D warnings` (tanpa ubah perilaku API)
+- `AppConfig`: `Default` via `#[derive(Default)]` menggantikan `impl Default` manual
+- Refactor kecil di `auth`, `user`, `paseto`, dan `pagination` sesuai saran Clippy (`ok_or`, `collapsible_if`, `needless_question_mark`, dll.)
 
 ### Removed
 
@@ -93,5 +98,6 @@ Rilis awal **rust-starterkit**.
 - Binary `generate-paseto-keys` untuk kunci PASETO
 - Dokumentasi `README.md` dan `guides/README.md`
 
-[Unreleased]: https://github.com/YOUR_USER/rust-starterkit/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/YOUR_USER/rust-starterkit/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/YOUR_USER/rust-starterkit/compare/v0.2.0
 [0.1.0]: https://github.com/YOUR_USER/rust-starterkit/releases/tag/v0.1.0

@@ -16,9 +16,9 @@ pub async fn get_all_paginated_users(
         .find_all_paginated(query.into_inner())
         .await
     {
-        Ok((data, page, per_page, total)) => HttpResponse::Ok().json(
-            PaginatedResponse::new(data, page, per_page, total, &request),
-        ),
+        Ok((data, page, per_page, total)) => HttpResponse::Ok().json(PaginatedResponse::new(
+            data, page, per_page, total, &request,
+        )),
         Err(e) => e.to_response(&request),
     }
 }

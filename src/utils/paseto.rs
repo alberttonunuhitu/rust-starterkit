@@ -127,13 +127,13 @@ fn verify_token_with_type(token: &str, expected_type: Option<&str>) -> Result<Cl
 
     let footer_str = String::from_utf8_lossy(trusted.footer());
     if let Ok(v) = serde_json::from_str::<serde_json::Value>(&footer_str) {
-        if let Some(env) = v.get("env").and_then(|e| e.as_str()) {
-            if env != state.environment {
-                anyhow::bail!(
-                    "Token environment mismatch: got '{env}', expected '{}'",
-                    state.environment
-                );
-            }
+        if let Some(env) = v.get("env").and_then(|e| e.as_str())
+            && env != state.environment
+        {
+            anyhow::bail!(
+                "Token environment mismatch: got '{env}', expected '{}'",
+                state.environment
+            );
         }
 
         if let Some(expected) = expected_type {

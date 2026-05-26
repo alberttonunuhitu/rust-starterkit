@@ -87,7 +87,7 @@ where
                 has_next: page < total_pages,
                 has_prev: page > 1,
             },
-            meta: super::response::Meta::new(extract_request_id(&request)),
+            meta: super::response::Meta::new(extract_request_id(request)),
         }
     }
 }

@@ -1,7 +1,7 @@
 use config::{Config, ConfigError, Environment};
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Default, Deserialize, Serialize)]
 pub struct AppConfig {
     #[serde(default)]
     pub server: ServerConfig,
@@ -89,17 +89,6 @@ impl Default for AppInfo {
             name: "rust-starterkit".to_string(),
             version: "0.1.0".to_string(),
             environment: "development".to_string(),
-        }
-    }
-}
-
-impl Default for AppConfig {
-    fn default() -> Self {
-        Self {
-            server: ServerConfig::default(),
-            token: TokenConfig::default(),
-            database: DatabaseConfig::default(),
-            app: AppInfo::default(),
         }
     }
 }
