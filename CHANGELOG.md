@@ -63,6 +63,8 @@ Format commit message mengikuti [guides/COMMITS.md](guides/COMMITS.md) (Conventi
 - Panduan menjalankan stack Docker di `README.md` (`docker compose --profile dev`)
 - GitHub Actions workflow `CI` untuk `push`/`pull_request` ke `main`: `cargo fmt`, `clippy` (`-D warnings`), build release (`api`, migrasi, `generate-paseto-keys`)
 - Cache Cargo (`Swatinem/rust-cache`) untuk workspace utama dan crate migrasi
+- Konfigurasi `cargo-deny` (`deny.toml`): izin lisensi (MIT, Apache-2.0, BSD, ISC, Unicode-3.0), larangan wildcard dependency, penolakan advisory kerentanan dan crate yanked
+- Job GitHub Actions **Security**: `cargo deny check` dan `cargo audit` pada setiap `push`/`pull_request`
 
 ### Changed
 
