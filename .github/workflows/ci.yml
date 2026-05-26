@@ -2,7 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+      - develop
   pull_request:
 
 concurrency:
@@ -19,11 +21,12 @@ env:
 
 jobs:
   quality:
-    name: Rust quality
+    name: Quality
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+      
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: 1.95
@@ -35,11 +38,42 @@ jobs:
             src/infrastructure/database/migrations
       - name: Format
         run: cargo fmt --all -- --check
-      - name: Clippy (api)
+      - name: Clippy
         run: cargo clippy --all-targets -- -D warnings
-      - name: Build release (api)
+      - name: Build API
         run: cargo build --release --bin api
-      - name: Build release (migration)
+      - name: Build Migration
         run: cargo build --release --manifest-path src/infrastructure/database/migrations/Cargo.toml
       - name: Build generate-paseto-keys
         run: cargo build --release --bin generate-paseto-keys
+
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with: toolchain: 1.95
+      - uses: Swatinem/rust-cache@v2
+      - name: Run tests 
+        run: cargo test --workspace --all-features
+  
+  security:
+    name: Security
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with: toolchain: stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Install cargo-deny
+        run: cargo install cargo-deny --locked
+      - name: Install cargo-audit
+        run: cargo install cargo-audit --locked
+      - name: Cargo deny
+        run: cargo deny check
+      - name: Cargo audit
+        run: cargo audit
+  
