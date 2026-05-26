@@ -69,5 +69,19 @@ Rilis awal **rust-starterkit**.
 - Binary `generate-paseto-keys` untuk kunci PASETO
 - Dokumentasi `README.md` dan `guides/README.md`
 
+## [0.2.0] - 2026-05-18
+
+### Changed
+
+- Logging terstruktur hanya ke stdout (JSON, RFC 3339, span) — menggantikan dual output (JSON file + pretty console)
+- Filter level tetap lewat `RUST_LOG` (default `info`)
+- Dokumentasi logging di `README.md` dan `.env.example`
+
+### Removed
+
+- Penulisan log ke file harian (`logs/rust-starterkit.log.*`) dan rotasi via `tracing-appender`
+- Konfigurasi `APP_LOG__DIR` dan struct `LoggingConfig` pada `AppConfig`
+- Dependency `tracing-appender`
+
 [Unreleased]: https://github.com/YOUR_USER/rust-starterkit/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/YOUR_USER/rust-starterkit/releases/tag/v0.1.0

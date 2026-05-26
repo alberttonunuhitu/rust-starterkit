@@ -97,7 +97,6 @@ Variabel memakai prefix `APP_`, nested dengan `__` (contoh: `APP_SERVER__PORT`).
 | `APP_TOKEN__REFRESH_EXPIRATION`   | TTL refresh token      | `7d`                                                 |
 | `APP_TOKEN__ISSUER`               | Issuer token           | `rust`                                               |
 | `APP_TOKEN__AUDIENCE`             | Audience token         | `vue`                                                |
-| `APP_LOG__DIR`                    | Direktori log          | `logs`                                               |
 | `APP_APP__ENVIRONMENT`            | Environment aplikasi   | `development`                                        |
 
 Lihat `.env.example` untuk daftar lengkap.
@@ -162,9 +161,8 @@ curl "http://127.0.0.1:8080/users?page=1&per_page=10" \
 Query paginasi: `page`, `per_page`, `search`, `sort_by`, `sort_order`.
 
 ## Logging
-
-- Console: pretty log (`RUST_LOG=info` atau `RUST_LOG=debug`)
-- File: `logs/rust-starterkit.log.YYYY-MM-DD` (JSON, rolling harian)
+- Output: **stdout** (satu baris JSON per event, RFC 3339, span untuk request HTTP)
+- Level: atur lewat `RUST_LOG` (default `info`, contoh: `RUST_LOG=debug` atau `RUST_LOG=rust_starterkit=debug,actix_web=info`)
 
 ## Catatan pengembangan
 

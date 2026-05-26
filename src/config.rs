@@ -6,8 +6,6 @@ pub struct AppConfig {
     #[serde(default)]
     pub server: ServerConfig,
     #[serde(default)]
-    pub log: LoggingConfig,
-    #[serde(default)]
     pub token: TokenConfig,
     #[serde(default)]
     pub database: DatabaseConfig,
@@ -19,11 +17,6 @@ pub struct AppConfig {
 pub struct ServerConfig {
     pub host: String,
     pub port: u16,
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct LoggingConfig {
-    pub dir: String,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -59,14 +52,6 @@ impl Default for ServerConfig {
         Self {
             host: "127.0.0.1".to_string(),
             port: 8080,
-        }
-    }
-}
-
-impl Default for LoggingConfig {
-    fn default() -> Self {
-        Self {
-            dir: "logs".to_string(),
         }
     }
 }
@@ -112,7 +97,6 @@ impl Default for AppConfig {
     fn default() -> Self {
         Self {
             server: ServerConfig::default(),
-            log: LoggingConfig::default(),
             token: TokenConfig::default(),
             database: DatabaseConfig::default(),
             app: AppInfo::default(),

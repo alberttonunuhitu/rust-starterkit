@@ -1,5 +1,4 @@
 use actix_web::{App, HttpServer, web};
-use anyhow::Result;
 use rust_starterkit::config::AppConfig;
 use rust_starterkit::state::AppState;
 use rust_starterkit::{
@@ -7,14 +6,13 @@ use rust_starterkit::{
     infrastructure::database::connection::establish_connection,
 };
 use tracing_actix_web::TracingLogger;
-use tracing_appender::non_blocking::WorkerGuard;
 use tracing_subscriber::{EnvFilter, fmt, prelude::*};
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let config = AppConfig::from_env().map_err(std::io::Error::other)?;
 
-    let _log_guard = init_tracing(&config.log.dir).map_err(std::io::Error::other)?;
+    init_tracing();
 
     tracing::info!(
         host = %config.server.host,
@@ -58,29 +56,19 @@ fn protected_routes(cfg: &mut web::ServiceConfig) {
     );
 }
 
-fn init_tracing(log_dir: &str) -> Result<WorkerGuard> {
-    std::fs::create_dir_all(log_dir)?;
-
-    let file_appender = tracing_appender::rolling::daily(log_dir, "rust-starterkit.log");
-    let (writer, guard) = tracing_appender::non_blocking(file_appender);
-
+fn init_tracing() {
     let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
 
-    let file_layer = fmt::layer()
+    let console_layer = fmt::layer()
         .json()
         .with_timer(fmt::time::UtcTime::rfc_3339())
         .with_current_span(true)
         .with_span_list(true)
         .flatten_event(true)
-        .with_writer(writer);
-
-    let console_layer = fmt::layer().pretty().with_writer(std::io::stdout);
+        .with_writer(std::io::stdout);
 
     tracing_subscriber::registry()
         .with(filter)
-        .with(file_layer)
         .with(console_layer)
         .init();
-
-    Ok(guard)
 }
