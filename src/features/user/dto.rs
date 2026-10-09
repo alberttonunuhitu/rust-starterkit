@@ -1,6 +1,7 @@
-use crate::common::pagination::PaginatedQuery;
+use crate::common::{error::AppResult, pagination::PaginatedQuery};
 use crate::features::user::entity::prelude::UserModel;
 use crate::features::user::service::{UserSortBy, UserSortOrder};
+use crate::utils::validation::Validator;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -11,9 +12,28 @@ pub struct CreateUserRequest {
     pub password: String,
 }
 
+impl CreateUserRequest {
+    pub fn validate(&self) -> AppResult<()> {
+        let mut validator = Validator::new();
+        validator.email("email", &self.email);
+        validator.password("password", &self.password);
+        validator.finish()
+    }
+}
+
 #[derive(Debug, Deserialize)]
 pub struct UpdateUserRequest {
     pub email: Option<String>,
+}
+
+impl UpdateUserRequest {
+    pub fn validate(&self) -> AppResult<()> {
+        let mut validator = Validator::new();
+        if let Some(email) = self.email.as_deref() {
+            validator.email("email", email);
+        }
+        validator.finish()
+    }
 }
 
 #[derive(Debug, Serialize)]

@@ -1,6 +1,10 @@
 use std::collections::HashMap;
 
-use actix_web::{HttpRequest, HttpResponse, ResponseError, http::StatusCode};
+use actix_web::{
+    HttpRequest, HttpResponse, ResponseError,
+    error::{InternalError, JsonPayloadError, PathError, QueryPayloadError},
+    http::StatusCode,
+};
 use serde::Serialize;
 use thiserror::Error;
 
@@ -13,6 +17,9 @@ pub enum ApiError {
 
     #[error("Forbidden")]
     Forbidden,
+
+    #[error("Resource not found")]
+    NotFound,
 
     #[error("User not found")]
     UserNotFound,
@@ -28,7 +35,7 @@ pub enum ApiError {
     #[error("Internal server error")]
     InternalServerError,
 
-    #[error("Bad request")]
+    #[error("{message}")]
     BadRequest { message: String },
 }
 
@@ -53,6 +60,8 @@ impl ApiError {
             Self::Unauthorized => ("UNAUTHORIZED", StatusCode::UNAUTHORIZED),
 
             Self::Forbidden => ("FORBIDDEN", StatusCode::FORBIDDEN),
+
+            Self::NotFound => ("NOT_FOUND", StatusCode::NOT_FOUND),
 
             Self::UserNotFound => ("USER_NOT_FOUND", StatusCode::NOT_FOUND),
 
@@ -96,6 +105,12 @@ impl ApiError {
         self.build_response(extract_request_id(request))
     }
 
+    /// Convert into an `actix_web::Error` whose response carries the request id.
+    pub fn into_actix_error(self, request: &HttpRequest) -> actix_web::Error {
+        let response = self.to_response(request);
+        InternalError::from_response(self, response).into()
+    }
+
     pub fn validation(field: &str, message: &str) -> Self {
         let mut fields = HashMap::new();
 
@@ -116,3 +131,30 @@ impl ResponseError for ApiError {
 }
 
 pub type AppResult<T> = Result<T, ApiError>;
+
+fn bad_request(error: impl std::fmt::Display, request: &HttpRequest) -> actix_web::Error {
+    ApiError::BadRequest {
+        message: error.to_string(),
+    }
+    .into_actix_error(request)
+}
+
+/// Render JSON body errors with the standard error envelope.
+pub fn json_error_handler(error: JsonPayloadError, request: &HttpRequest) -> actix_web::Error {
+    bad_request(error, request)
+}
+
+/// Render query string errors with the standard error envelope.
+pub fn query_error_handler(error: QueryPayloadError, request: &HttpRequest) -> actix_web::Error {
+    bad_request(error, request)
+}
+
+/// Render path parameter errors with the standard error envelope.
+pub fn path_error_handler(error: PathError, request: &HttpRequest) -> actix_web::Error {
+    bad_request(error, request)
+}
+
+/// Fallback for unmatched routes.
+pub async fn not_found(request: HttpRequest) -> HttpResponse {
+    ApiError::NotFound.to_response(&request)
+}

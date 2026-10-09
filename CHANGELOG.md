@@ -41,6 +41,9 @@ Format commit message mengikuti [guides/COMMITS.md](guides/COMMITS.md) (Conventi
 ### Added
 
 - Unit test untuk hashing password dan refresh token
+- Validasi input `POST /users` dan `PUT /users/{id}`: format email (maks. 255 karakter) dan panjang password 8–128 karakter; error dikembalikan sebagai `422 VALIDATION_ERROR` dengan detail per field
+- Respons `404 NOT_FOUND` berformat envelope untuk route yang tidak dikenal
+- Integration test untuk format envelope error (JSON tidak valid, tanpa token, route tidak dikenal)
 
 ### Changed
 
@@ -48,6 +51,9 @@ Format commit message mengikuti [guides/COMMITS.md](guides/COMMITS.md) (Conventi
 - **Breaking:** hash refresh token di database kini SHA-256 (sebelumnya Argon2); sesi lama harus login ulang
 - Hashing/verifikasi Argon2 dijalankan di blocking thread pool (`spawn_blocking`) agar tidak memblokir worker Actix
 - Default `app.version` mengikuti versi crate
+- Semua respons error (body JSON/query/path tidak valid, `401` dari middleware, extractor) kini memakai envelope standar dengan `request_id` yang benar (sebelumnya `"n/a"` atau teks bawaan Actix)
+- `BAD_REQUEST` kini menyertakan pesan penyebab error
+- Middleware autentikasi dipasang per scope/resource (`/users`, `/auth/logout`), bukan lewat scope kosong yang menangkap semua path
 
 ### Deprecated
 
@@ -59,6 +65,10 @@ Format commit message mengikuti [guides/COMMITS.md](guides/COMMITS.md) (Conventi
 
 - Workflow CI tidak valid (YAML `with: toolchain: …` dalam satu baris) sehingga job tidak pernah berjalan
 - Format kode crate migrasi (`cargo fmt`)
+- `POST /auth/logout` selalu `404` karena tertutup scope publik `/auth`
+- Route yang tidak dikenal mengembalikan `401` alih-alih `404`
+- Pembuatan/update user dengan email duplikat yang terjadi bersamaan kini `409` (sebelumnya `500`)
+- Pencarian user meng-escape `%` dan `_` sehingga dicocokkan secara literal
 - README menyebut logging ke file harian; logging hanya JSON ke stdout
 
 ### Security

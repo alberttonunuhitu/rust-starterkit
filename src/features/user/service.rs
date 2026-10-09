@@ -5,11 +5,11 @@ use super::{
 use crate::{
     common::{constants::MAX_PER_PAGE, error::ApiError},
     features::user::dto::{UpdateUserRequest, UserResponse},
-    utils::{password, uuid::generate_uuidv7},
+    utils::{password, uuid::generate_uuidv7, validation::escape_like},
 };
 use sea_orm::{
-    ActiveModelTrait, ActiveValue::Set, ColumnTrait, DatabaseConnection, EntityTrait,
-    PaginatorTrait, QueryFilter, QueryOrder, Select, TryIntoModel,
+    ActiveModelTrait, ActiveValue::Set, ColumnTrait, DatabaseConnection, DbErr, EntityTrait,
+    PaginatorTrait, QueryFilter, QueryOrder, Select, SqlErr, TryIntoModel, sea_query::LikeExpr,
 };
 use serde::Deserialize;
 use uuid::Uuid;
@@ -35,8 +35,9 @@ impl UserService {
         if let Some(search) = payload.search.as_deref() {
             let trimmed = search.trim();
             if !trimmed.is_empty() {
-                let keyword = format!("%{}%", trimmed.to_lowercase());
-                query = query.filter(super::entity::Column::Email.like(keyword));
+                let keyword = format!("%{}%", escape_like(&trimmed.to_lowercase()));
+                query = query
+                    .filter(super::entity::Column::Email.like(LikeExpr::new(keyword).escape('\\')));
             }
         }
 
@@ -60,6 +61,8 @@ impl UserService {
     }
 
     pub async fn create(&self, data: &CreateUserRequest) -> Result<UserModel, ApiError> {
+        data.validate()?;
+
         let email = self.ensure_email_available(&data.email, None).await?;
         let hashed_password = password::hash(&data.password).await?;
 
@@ -70,10 +73,9 @@ impl UserService {
             ..Default::default()
         };
 
-        user.insert(&self.db).await.map_err(|e| {
-            tracing::error!(event = "user.create.failed", error = %e);
-            ApiError::InternalServerError
-        })
+        user.insert(&self.db)
+            .await
+            .map_err(|e| map_write_error(e, "user.create.failed"))
     }
 
     pub async fn find_by_id(&self, id: Uuid) -> Result<UserModel, ApiError> {
@@ -99,6 +101,8 @@ impl UserService {
     }
 
     pub async fn update(&self, id: Uuid, data: &UpdateUserRequest) -> Result<UserModel, ApiError> {
+        data.validate()?;
+
         let user = self.find_by_id(id).await?;
         let mut active: UserActiveModel = user.into();
         let mut changed = false;
@@ -116,10 +120,10 @@ impl UserService {
             });
         }
 
-        active.update(&self.db).await.map_err(|e| {
-            tracing::error!(event = "user.update.failed", error = %e);
-            ApiError::InternalServerError
-        })
+        active
+            .update(&self.db)
+            .await
+            .map_err(|e| map_write_error(e, "user.update.failed"))
     }
 
     pub async fn delete(&self, id: Uuid) -> Result<(), ApiError> {
@@ -153,6 +157,17 @@ impl UserService {
 
         Ok(normalized)
     }
+}
+
+/// The email pre-check can race with a concurrent insert; the unique index is
+/// the source of truth, so a violation there is still reported as a conflict.
+fn map_write_error(error: DbErr, event: &'static str) -> ApiError {
+    if let Some(SqlErr::UniqueConstraintViolation(_)) = error.sql_err() {
+        return ApiError::EmailAlreadyExists;
+    }
+
+    tracing::error!(event, error = %error);
+    ApiError::InternalServerError
 }
 
 #[derive(Debug, Clone, Copy, Default, Deserialize)]

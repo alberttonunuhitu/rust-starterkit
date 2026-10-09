@@ -249,6 +249,30 @@ curl "http://127.0.0.1:8080/users?page=1&per_page=10" \
 
 Query paginasi: `page`, `per_page`, `search`, `sort_by`, `sort_order`.
 
+### Error
+
+Semua error memakai envelope yang sama:
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Validation failed",
+    "fields": { "email": ["Email format is invalid"] }
+  },
+  "meta": { "request_id": "...", "timestamp": "..." }
+}
+```
+
+| Status | `code` | Kapan |
+| ------ | ------ | ----- |
+| `400` | `BAD_REQUEST` | Body JSON, query, atau path tidak valid |
+| `401` | `UNAUTHORIZED` | Token tidak ada/tidak valid, atau login gagal |
+| `404` | `NOT_FOUND` / `USER_NOT_FOUND` | Route atau user tidak ditemukan |
+| `409` | `EMAIL_ALREADY_EXISTS` | Email sudah dipakai |
+| `422` | `VALIDATION_ERROR` | Email tidak valid atau password di luar 8–128 karakter |
+
 ## Logging
 - Output: **stdout** (satu baris JSON per event, RFC 3339, span untuk request HTTP)
 - Level: atur lewat `RUST_LOG` (default `info`, contoh: `RUST_LOG=debug` atau `RUST_LOG=api=debug,actix_web=info`)

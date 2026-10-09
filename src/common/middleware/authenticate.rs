@@ -1,7 +1,7 @@
 use std::task::{Context, Poll};
 
 use actix_web::{
-    Error, HttpMessage, ResponseError,
+    Error, HttpMessage,
     body::EitherBody,
     dev::{Service, ServiceRequest, ServiceResponse, Transform},
     http::header,
@@ -56,30 +56,18 @@ where
         let token = extract_bearer_token(&request);
 
         let Some(token) = token else {
-            let (req, _) = request.into_parts();
-            let response = ApiError::Unauthorized
-                .error_response()
-                .map_into_right_body();
-            return Box::pin(async { Ok(ServiceResponse::new(req, response)) });
+            return unauthorized(request);
         };
 
         match crate::utils::paseto::verify_access_token(&token) {
             Err(e) => {
                 tracing::warn!(event = "auth.middleware.token_invalid", error = %e);
-                let (req, _) = request.into_parts();
-                let response = ApiError::Unauthorized
-                    .error_response()
-                    .map_into_right_body();
-                Box::pin(async { Ok(ServiceResponse::new(req, response)) })
+                unauthorized(request)
             }
             Ok(claims) => match extract_user_from_claims(&claims) {
                 Err(e) => {
                     tracing::warn!(event = "auth.middleware.claims_invalid", error = %e);
-                    let (req, _) = request.into_parts();
-                    let response = ApiError::Unauthorized
-                        .error_response()
-                        .map_into_right_body();
-                    Box::pin(async { Ok(ServiceResponse::new(req, response)) })
+                    unauthorized(request)
                 }
                 Ok(user) => {
                     request.extensions_mut().insert(user);
@@ -89,6 +77,19 @@ where
             },
         }
     }
+}
+
+fn unauthorized<B>(
+    request: ServiceRequest,
+) -> LocalBoxFuture<'static, Result<ServiceResponse<EitherBody<B>>, Error>>
+where
+    B: 'static,
+{
+    let (req, _) = request.into_parts();
+    let response = ApiError::Unauthorized
+        .to_response(&req)
+        .map_into_right_body();
+    Box::pin(async { Ok(ServiceResponse::new(req, response)) })
 }
 
 fn extract_bearer_token(request: &ServiceRequest) -> Option<String> {

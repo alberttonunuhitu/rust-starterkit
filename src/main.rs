@@ -2,7 +2,10 @@ use actix_web::{App, HttpServer, web};
 use api::config::AppConfig;
 use api::state::AppState;
 use api::{
-    common::middleware::{authenticate::AuthenticateMiddleware, request_id::RequestIdMiddleware},
+    common::{
+        error::{json_error_handler, not_found, path_error_handler, query_error_handler},
+        middleware::request_id::RequestIdMiddleware,
+    },
     infrastructure::database::connection::establish_connection,
 };
 use tracing_actix_web::TracingLogger;
@@ -32,28 +35,23 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new()
             .app_data(state.clone())
+            .app_data(web::JsonConfig::default().error_handler(json_error_handler))
+            .app_data(web::QueryConfig::default().error_handler(query_error_handler))
+            .app_data(web::PathConfig::default().error_handler(path_error_handler))
             .wrap(RequestIdMiddleware)
             .wrap(TracingLogger::default())
-            .configure(public_routes)
-            .configure(protected_routes)
+            .configure(routes)
+            .default_service(web::to(not_found))
     })
     .bind(bind)?
     .run()
     .await
 }
 
-fn public_routes(cfg: &mut web::ServiceConfig) {
+fn routes(cfg: &mut web::ServiceConfig) {
     cfg.configure(api::features::health::routes::health_routes)
-        .configure(api::features::auth::routes::auth_routes);
-}
-
-fn protected_routes(cfg: &mut web::ServiceConfig) {
-    cfg.service(
-        web::scope("")
-            .wrap(AuthenticateMiddleware)
-            .configure(api::features::user::routes::user_routes)
-            .configure(api::features::auth::routes::protected_auth_routes),
-    );
+        .configure(api::features::auth::routes::auth_routes)
+        .configure(api::features::user::routes::user_routes);
 }
 
 fn init_tracing() {
