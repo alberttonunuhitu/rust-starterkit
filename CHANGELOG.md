@@ -40,15 +40,32 @@ Format commit message mengikuti [guides/COMMITS.md](guides/COMMITS.md) (Conventi
 
 ### Added
 
+- Unit test untuk hashing password dan refresh token
+
 ### Changed
+
+- **Breaking:** refresh token kini ditandatangani dengan `APP_TOKEN__REFRESH_SECRET_KEY` (sebelumnya memakai kunci akses). Kedua kunci wajib diisi dan harus berbeda
+- **Breaking:** hash refresh token di database kini SHA-256 (sebelumnya Argon2); sesi lama harus login ulang
+- Hashing/verifikasi Argon2 dijalankan di blocking thread pool (`spawn_blocking`) agar tidak memblokir worker Actix
+- Default `app.version` mengikuti versi crate
 
 ### Deprecated
 
 ### Removed
 
+- Fungsi `paseto::verify_token` yang tidak dipakai
+
 ### Fixed
 
+- Workflow CI tidak valid (YAML `with: toolchain: …` dalam satu baris) sehingga job tidak pernah berjalan
+- Format kode crate migrasi (`cargo fmt`)
+- README menyebut logging ke file harian; logging hanya JSON ke stdout
+
 ### Security
+
+- Verifikasi token kini memvalidasi klaim `iss` dan `aud` sesuai konfigurasi
+- Footer token (`env`, `type`) wajib ada dan valid
+- Login dengan email yang tidak terdaftar menjalankan verifikasi dummy agar waktu respons tidak membocorkan keberadaan akun
 
 ---
 

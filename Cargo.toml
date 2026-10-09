@@ -22,3 +22,4 @@ pasetors = "0.7.8"
 hex = "0.4.3"
 sea-orm = { version = "2.0.0-rc", features = ["sqlx-postgres", "runtime-tokio-rustls", "macros", "debug-print"] }
 argon2 = "0.5.3"
+sha2 = "0.10.9"

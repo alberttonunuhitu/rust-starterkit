@@ -61,7 +61,7 @@ impl UserService {
 
     pub async fn create(&self, data: &CreateUserRequest) -> Result<UserModel, ApiError> {
         let email = self.ensure_email_available(&data.email, None).await?;
-        let hashed_password = password::hash(&data.password)?;
+        let hashed_password = password::hash(&data.password).await?;
 
         let user = UserActiveModel {
             id: Set(generate_uuidv7()),

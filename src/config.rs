@@ -87,7 +87,7 @@ impl Default for AppInfo {
     fn default() -> Self {
         Self {
             name: "rust-starterkit".to_string(),
-            version: "0.1.0".to_string(),
+            version: env!("CARGO_PKG_VERSION").to_string(),
             environment: "development".to_string(),
         }
     }

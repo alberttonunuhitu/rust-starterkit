@@ -18,7 +18,8 @@ use crate::{config::AppConfig, utils::duration::parse_token_expiration};
 const KEY_VERSION: &str = "v1";
 
 struct PasetoState {
-    keypair: AsymmetricKeyPair<V4>,
+    access_keypair: AsymmetricKeyPair<V4>,
+    refresh_keypair: AsymmetricKeyPair<V4>,
     issuer: String,
     audience: String,
     expiration: String,
@@ -29,16 +30,19 @@ struct PasetoState {
 static STATE: OnceLock<PasetoState> = OnceLock::new();
 
 pub fn init(config: &AppConfig) -> Result<()> {
-    let secret =
-        parse_secret_key(&config.token.secret_key).context("APP_TOKEN__SECRET_KEY is invalid")?;
+    let access_keypair =
+        load_keypair(&config.token.secret_key).context("APP_TOKEN__SECRET_KEY is invalid")?;
+    let refresh_keypair = load_keypair(&config.token.refresh_secret_key)
+        .context("APP_TOKEN__REFRESH_SECRET_KEY is invalid")?;
 
-    let public = AsymmetricPublicKey::<V4>::try_from(&secret)
-        .map_err(|e| anyhow::anyhow!("{e:?}"))
-        .context("Failed to derive PASETO v4 public key")?;
+    if access_keypair.secret.as_bytes() == refresh_keypair.secret.as_bytes() {
+        anyhow::bail!("APP_TOKEN__SECRET_KEY and APP_TOKEN__REFRESH_SECRET_KEY must be different");
+    }
 
     STATE
         .set(PasetoState {
-            keypair: AsymmetricKeyPair { public, secret },
+            access_keypair,
+            refresh_keypair,
             issuer: config.token.issuer.clone(),
             audience: config.token.audience.clone(),
             expiration: config.token.expiration.clone(),
@@ -56,6 +60,16 @@ fn state() -> Result<&'static PasetoState> {
     STATE
         .get()
         .context("PASETO not initialized (call paseto::init first)")
+}
+
+fn load_keypair(secret_key: &str) -> Result<AsymmetricKeyPair<V4>> {
+    let secret = parse_secret_key(secret_key)?;
+
+    let public = AsymmetricPublicKey::<V4>::try_from(&secret)
+        .map_err(|e| anyhow::anyhow!("{e:?}"))
+        .context("Failed to derive PASETO v4 public key")?;
+
+    Ok(AsymmetricKeyPair { public, secret })
 }
 
 /// Load a PASETO v4 secret key from PASERK (`k4.secret.…`) or hex (`seed || public`, 64 bytes).
@@ -98,7 +112,7 @@ pub fn create_access_token(sub: Uuid, email: &str) -> Result<String> {
     let claims = build_claims(state, sub, email, &state.expiration)?;
     let footer = build_footer(state, "access")?;
 
-    public::sign(&state.keypair.secret, &claims, Some(&footer), None)
+    public::sign(&state.access_keypair.secret, &claims, Some(&footer), None)
         .map_err(|e| anyhow::anyhow!("{e:?}"))
         .context("Failed to create access token")
 }
@@ -108,41 +122,46 @@ pub fn create_refresh_token(sub: Uuid, email: &str) -> Result<String> {
     let claims = build_claims(state, sub, email, &state.refresh_expiration)?;
     let footer = build_footer(state, "refresh")?;
 
-    public::sign(&state.keypair.secret, &claims, Some(&footer), None)
+    public::sign(&state.refresh_keypair.secret, &claims, Some(&footer), None)
         .map_err(|e| anyhow::anyhow!("{e:?}"))
         .context("Failed to create refresh token")
 }
 
-fn verify_token_with_type(token: &str, expected_type: Option<&str>) -> Result<Claims> {
+fn verify_token_with_type(
+    token: &str,
+    public_key: &AsymmetricPublicKey<V4>,
+    expected_type: &str,
+) -> Result<Claims> {
     let state = state()?;
 
     let untrusted = UntrustedToken::<Public, V4>::try_from(token)
         .map_err(|e| anyhow::anyhow!("{e:?}"))
         .context("Invalid PASETO token format")?;
 
-    let rules = ClaimsValidationRules::new();
-    let trusted = public::verify(&state.keypair.public, &untrusted, &rules, None, None)
+    let mut rules = ClaimsValidationRules::new();
+    rules.validate_issuer_with(&state.issuer);
+    rules.validate_audience_with(&state.audience);
+
+    let trusted = public::verify(public_key, &untrusted, &rules, None, None)
         .map_err(|e| anyhow::anyhow!("{e:?}"))
         .context("Token verification failed (invalid signature, expired, or tampered)")?;
 
-    let footer_str = String::from_utf8_lossy(trusted.footer());
-    if let Ok(v) = serde_json::from_str::<serde_json::Value>(&footer_str) {
-        if let Some(env) = v.get("env").and_then(|e| e.as_str())
-            && env != state.environment
-        {
-            anyhow::bail!(
-                "Token environment mismatch: got '{env}', expected '{}'",
-                state.environment
-            );
-        }
+    let footer: serde_json::Value =
+        serde_json::from_slice(trusted.footer()).context("Token footer is not valid JSON")?;
 
-        if let Some(expected) = expected_type {
-            match v.get("type").and_then(|t| t.as_str()) {
-                Some(t) if t == expected => {}
-                Some(t) => anyhow::bail!("Token type mismatch: got '{t}', expected '{expected}'"),
-                None => anyhow::bail!("Token footer missing 'type' field"),
-            }
-        }
+    match footer.get("env").and_then(|e| e.as_str()) {
+        Some(env) if env == state.environment => {}
+        Some(env) => anyhow::bail!(
+            "Token environment mismatch: got '{env}', expected '{}'",
+            state.environment
+        ),
+        None => anyhow::bail!("Token footer missing 'env' field"),
+    }
+
+    match footer.get("type").and_then(|t| t.as_str()) {
+        Some(t) if t == expected_type => {}
+        Some(t) => anyhow::bail!("Token type mismatch: got '{t}', expected '{expected_type}'"),
+        None => anyhow::bail!("Token footer missing 'type' field"),
     }
 
     trusted
@@ -151,14 +170,49 @@ fn verify_token_with_type(token: &str, expected_type: Option<&str>) -> Result<Cl
         .context("Token has no payload claims")
 }
 
-pub fn verify_token(token: &str) -> Result<Claims> {
-    verify_token_with_type(token, None)
-}
-
 pub fn verify_access_token(token: &str) -> Result<Claims> {
-    verify_token_with_type(token, Some("access"))
+    let state = state()?;
+    verify_token_with_type(token, &state.access_keypair.public, "access")
 }
 
 pub fn verify_refresh_token(token: &str) -> Result<Claims> {
-    verify_token_with_type(token, Some("refresh"))
+    let state = state()?;
+    verify_token_with_type(token, &state.refresh_keypair.public, "refresh")
+}
+
+#[cfg(test)]
+mod tests {
+    use pasetors::{keys::Generate, paserk::FormatAsPaserk};
+
+    use super::*;
+
+    fn generate_secret() -> String {
+        let pair = AsymmetricKeyPair::<V4>::generate().unwrap();
+        let mut out = String::new();
+        pair.secret.fmt(&mut out).unwrap();
+        out
+    }
+
+    // `STATE` is process-global, so the whole flow lives in a single test.
+    #[test]
+    fn access_and_refresh_tokens_use_separate_keys() {
+        let mut config = AppConfig::default();
+        config.token.secret_key = generate_secret();
+        config.token.refresh_secret_key = generate_secret();
+        init(&config).unwrap();
+
+        let user_id = Uuid::now_v7();
+        let access = create_access_token(user_id, "user@example.com").unwrap();
+        let refresh = create_refresh_token(user_id, "user@example.com").unwrap();
+
+        let claims = verify_access_token(&access).unwrap();
+        assert_eq!(
+            claims.get_claim("sub").and_then(|v| v.as_str()),
+            Some(user_id.to_string().as_str())
+        );
+        assert!(verify_refresh_token(&refresh).is_ok());
+
+        assert!(verify_access_token(&refresh).is_err());
+        assert!(verify_refresh_token(&access).is_err());
+    }
 }
