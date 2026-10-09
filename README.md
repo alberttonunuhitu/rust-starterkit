@@ -8,7 +8,7 @@ Starter kit REST API dengan **Rust**, **Actix Web**, **PostgreSQL** (SeaORM), au
 - Token akses & refresh (PASETO v4) dengan rotasi refresh token
 - CRUD pengguna dengan paginasi, pencarian, dan sorting
 - Middleware: `x-request-id`, autentikasi Bearer, tracing HTTP
-- Logging terstruktur (JSON ke file harian + pretty console)
+- Logging terstruktur (JSON ke stdout)
 - Konfigurasi via environment (`APP_*`) dan `.env`
 - Migrasi database SeaORM
 

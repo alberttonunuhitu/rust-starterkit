@@ -32,10 +32,14 @@ impl AuthService {
             .map_err(|e| {
                 tracing::error!(event = "auth.login.db_error", error = %e);
                 ApiError::InternalServerError
-            })?
-            .ok_or(ApiError::Unauthorized)?;
+            })?;
 
-        let password_valid = password::verify(&request.password, &user.hashed_password)?;
+        let Some(user) = user else {
+            password::verify_dummy(&request.password).await;
+            return Err(ApiError::Unauthorized);
+        };
+
+        let password_valid = password::verify(&request.password, &user.hashed_password).await?;
         if !password_valid {
             return Err(ApiError::Unauthorized);
         }
@@ -53,7 +57,7 @@ impl AuthService {
             ApiError::InternalServerError
         })?;
 
-        let hashed_refresh = password::hash(&refresh_token)?;
+        let hashed_refresh = password::hash_token(&refresh_token);
         let mut active: UserActiveModel = user.into();
         active.current_hashed_refresh_token = Set(Some(hashed_refresh));
         active.update(&self.db).await.map_err(|e| {
@@ -101,8 +105,7 @@ impl AuthService {
             .as_deref()
             .ok_or(ApiError::Unauthorized)?;
 
-        let valid = password::verify(&request.refresh_token, stored_hash)?;
-        if !valid {
+        if !password::verify_token(&request.refresh_token, stored_hash) {
             tracing::warn!(event = "auth.refresh.token_mismatch", %user_id);
             return Err(ApiError::Unauthorized);
         }
@@ -120,7 +123,7 @@ impl AuthService {
                 ApiError::InternalServerError
             })?;
 
-        let hashed_new_refresh = password::hash(&new_refresh_token)?;
+        let hashed_new_refresh = password::hash_token(&new_refresh_token);
         let mut active: UserActiveModel = user.into();
         active.current_hashed_refresh_token = Set(Some(hashed_new_refresh));
         active.update(&self.db).await.map_err(|e| {

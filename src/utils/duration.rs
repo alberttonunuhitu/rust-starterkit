@@ -9,7 +9,7 @@ pub fn parse_token_expiration(exp_str: &str) -> ChronoDuration {
         .and_then(|duration| ChronoDuration::from_std(duration).ok())
         .unwrap_or_else(|| {
             eprintln!(
-                "Warning: Invalid JWT expiration format '{exp_str}'. Using default {DEFAULT_EXPIRATION_HOURS}h."
+                "Warning: Invalid token expiration format '{exp_str}'. Using default {DEFAULT_EXPIRATION_HOURS}h."
             );
             ChronoDuration::hours(DEFAULT_EXPIRATION_HOURS)
         })
